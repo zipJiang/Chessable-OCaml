@@ -20,3 +20,14 @@ The project should rely on usual package building tools, so `dune` should be use
 ### `rgrinberg/ocaml-pgn`
 
 This is deprecated as it uses a lot of deprecated packages (an implementation from 9 years ago).
+
+
+## Implementation Order
+
+1. Backend file processing, `.pgn` function parsing, import export.
+2. Internal representation of repertoire and lines, the `.mli` specified types and functionalities.
+3. A backend commandline that can process `.pgn` files and generate repertoire serializations.
+4. User interface for input lines.
+5. User interface for input moves and get feedbacks.
+6. Server that respond to user review inputs etc.
+7. Glue everything and produce a working system.

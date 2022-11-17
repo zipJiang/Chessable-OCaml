@@ -1,0 +1,4 @@
+(executable
+ (public_name chessable_ocaml)
+ (name main)
+ (libraries chessable_ocaml))

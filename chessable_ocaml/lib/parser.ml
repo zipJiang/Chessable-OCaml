@@ -452,10 +452,25 @@ let move_to_text (move: move): string =
     in
     String.concat ~sep:"" [piece_text;starting_annotation_text;is_take_text;target_square_text;promotion_text;mate_check_text;remark_text]
   in
-  move_text
+  begin
+    match move.side with
+    | White ->
+      String.concat ~sep:". " [Printf.sprintf "%d" move.turn_id;move_text]
+    | Black ->
+        move_text
+    | Root -> ""
+  end
     
 
 let rec pprint_line (move: move): string =
   (* This function will read a move and continuation *)
   match move.continuation with
   | [] -> (* This is the end move *) 
+    move_to_text move
+  | [main_cont] ->
+      (* Having only one continuation *)
+      String.concat ~sep:" " [(move_to_text move);(move_to_text main_cont)]
+  | h::tl ->
+      (* Having multiple continuations so that we first represent those that are not main continuations *)
+      (* For simplicity the implementation reverse the order of main move and sidelines *)
+      (move_to_text move)::(pprint_line h)::

@@ -295,6 +295,8 @@ let rec parse_line (cl: char list) (parent: move): move * (char list) =
             match cl with
             | '('::tl ->
               let parent, cl = parse_line tl parent in
+              (*It's important that after parsing the parenthesis we need to re-invoke the parse_line to continue on move *)
+              let move, cl = parse_line cl move in
               {side=parent.side;move=parent.move;turn_id=parent.turn_id;comment=parent.comment;continuation=move::parent.continuation}, cl
             | _ ->
               let move, cl = parse_line cl move in
@@ -469,8 +471,22 @@ let rec pprint_line (move: move): string =
     move_to_text move
   | [main_cont] ->
       (* Having only one continuation *)
-      String.concat ~sep:" " [(move_to_text move);(move_to_text main_cont)]
-  | h::tl ->
+      String.concat ~sep:" " [(move_to_text move);(pprint_line main_cont)]
+  | _ ->
       (* Having multiple continuations so that we first represent those that are not main continuations *)
       (* For simplicity the implementation reverse the order of main move and sidelines *)
-      (move_to_text move)::(pprint_line h)::
+      let all_str = List.map ~f:pprint_line move.continuation in
+      let bracketing (ori_str: string) (parent: move): string =
+        (* This is a helper function that takes a string and do required modification *)
+        match parent.side with
+        | White ->  String.concat ~sep:" " ((Printf.sprintf "( %d. ..." move.turn_id)::ori_str::[")"])
+        | Black -> String.concat ~sep:" " ["(";ori_str;")"]
+      in
+      let rec bracketing_except_last (sl: string list) (parent: move): string =
+        (* bracketing all lines except the last line (which is the main line) *)
+        match sl with
+        | [] -> ""
+        | [h] -> h
+        | h::tl -> String.concat ~sep:"\n" [(bracketing h parent);bracketing_except_last tl parent]
+      in
+      String.concat ~sep:"\n" [move_to_text move;bracketing_except_last all_str move]

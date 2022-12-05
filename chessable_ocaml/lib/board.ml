@@ -2,14 +2,17 @@ open Core
 
 (* Notice that we don't need to track the full board hyperstates here because we have all the moves to this position and will have a javascript based chess script for checking *)
 
-type location = (char * int) [@@deriving sexp];;
+type location = (char * int) [@@deriving eq, sexp];;
 
 type direction = N | NE | E | SE | S | SW | W | NW;;
 
 type meta = Pawn of {ep: bool} | King of {ck: bool;cq: bool} | Other;;
 
 type piece = 
-  {piece=Parser.piece;side=Parser.side;location=location; meta=meta}
+  {piece:Parser.piece;
+   side:Parser.side;
+   location:location;
+   meta:meta}
 ;;
 
 type square =
@@ -69,7 +72,7 @@ let initialize: board =
     {piece=Knight;location=('g', 1);side=White;meta=Other};
     {piece=Bishop;location=('c', 1);side=White;meta=Other};
     {piece=Bishop;location=('f', 1);side=White;meta=Other};
-    {piece=King;location=('e', 1);side=White;meta={ck=true;cq=true});
+    {piece=King;location=('e', 1);side=White;meta=King {ck=true;cq=true}};
     {piece=Queen;location=('d', 1);side=White;meta=Other};
   ] in
   let black_pawns = [
@@ -89,7 +92,7 @@ let initialize: board =
     {piece=Knight;location=('g', 8);side=Black;meta=Other};
     {piece=Bishop;location=('c', 8);side=Black;meta=Other};
     {piece=Bishop;location=('f', 8);side=Black;meta=Other};
-    {piece=King;location=('e', 8);side=Black;meta={ck=true;cq=true});
+    {piece=King;location=('e', 8);side=Black;meta=King {ck=true;cq=true}};
     {piece=Queen;location=('d', 8);side=Black;meta=Other};
   ] in
   let rec assign_piece_to_row_exn (pl: piece list) (r: int) (c: int): square list =
@@ -125,6 +128,22 @@ let initialize: board =
     side_to_play=White
   }
 
+let direction_of_delta (dc: int) (dr: int): direction =
+  (* Swap direction back into square delta *)
+  match dc, dr with
+  | 0, 0 -> failwith "Not moved at all!"
+  | 0, _ -> if dr < 0 then S else N
+  | _, 0 -> if dc < 0 then W else E
+  | _, _ -> 
+    if dr < 0 && dc > 0 then
+      SE
+    else if dr < 0 && dc < 0 then
+      SW
+    else if dr > 0 && dc > 0 then
+      NE
+    else
+      NW
+
 let step_direction (step: int) (d: direction) (loc: location): location option =
   (* Moving starting from a direction and several steps to a direction *)
   match loc with
@@ -140,6 +159,7 @@ let step_direction (step: int) (d: direction) (loc: location): location option =
     | SW -> (-1, -1)
     | W -> (-1, 0)
     | NW -> (-1, 1)
+    in
     let coli, row = coli + step * vm, row + step * hm in
     if (coli < 1 || coli > 8) || (row < 1 || row > 8) then
       None
@@ -149,9 +169,142 @@ let step_direction (step: int) (d: direction) (loc: location): location option =
 
 let compare_piece_type (pp: Parser.piece) (pb: piece): bool =
   (* Compare whether they are the same piece type *)
-  equal_piece pb.piece pp
+  Parser.equal_piece pb.piece pp
 
-let check_move_validity (mv Parser.mv) (piece: piece) (board: board): bool =
+
+let check_proper_move (piece: piece) (mv: Parser.mv): bool =
+  (* This checks condition 1) *)
+  match piece.piece with
+  | Pawn -> 
+    if mv.is_take then
+      (* 
+          This is a take move, so it requires that the target square has piece, but this is not checked,
+          Notice that this function only checks if the piece can move to the target square.
+      *)
+      match mv.target with
+      | None -> false (* Cannot move pawn to None *)
+      | Some {col=col;row=row} ->
+        begin
+          match piece.side with
+          | White -> let pm1, pm2 = step_direction 1 NE piece.location, step_direction 1 NW piece.location in
+            let potentials = Helper.filter_option [pm1;pm2] in
+            begin
+              match List.find ~f:(equal_location (col, row)) potentials with
+              Some _ -> true
+              | None -> false
+            end
+          | Black -> let pm1, pm2 = step_direction 1 SE piece.location, step_direction 1 SW piece.location in
+            let potentials = Helper.filter_option [pm1;pm2] in
+            begin
+              match List.find ~f:(equal_location (col, row)) potentials with
+              Some _ -> true
+              | None -> false
+            end
+          | _ -> failwith "Does not require move for Root!"
+        end
+    else
+      begin
+      match mv.target with
+      | None -> false
+      | Some {col=col;row=row} ->
+        begin
+          (* We don't have to check whether the pawn can move 2 squares yet, because if two pawns satisify the criteria, one of the pawn must be blocked *)
+          match piece.side with
+          | White -> let pm1, pm2 = step_direction 1 N piece.location, step_direction 2 N piece.location in
+            let potentials = Helper.filter_option [pm1;pm2] in
+            begin
+              match List.find ~f:(equal_location (col, row)) potentials with
+              Some _ -> true
+              | None -> false
+            end
+          | Black -> let pm1, pm2 = step_direction 1 S piece.location, step_direction 2 S piece.location in
+            let potentials = Helper.filter_option [pm1;pm2] in
+            begin
+              match List.find ~f:(equal_location (col, row)) potentials with
+              Some _ -> true
+              | None -> false
+            end
+          | _ -> failwith "Does not require move for Root!"
+        end
+      end
+  | Bishop ->
+    (* Pieces are simplier because they only have fixed ways of moving *)
+    begin
+      match mv.target, piece.location with
+      | None, _ -> false
+      | Some {col=col;row=row}, (pc, pr) ->
+        begin
+          let coli = col_to_int col in
+          let delta_x, delta_y = abs((col_to_int pc) - coli), abs(pr - row) in
+          delta_x = delta_y
+        end
+    end
+  | Knight ->
+    (* Similar for knight *)
+    begin
+      match mv.target, piece.location with
+      | None, _ -> false
+      | Some {col=col;row=row}, (pc, pr) ->
+        begin
+          let coli = col_to_int col in
+          let delta_x, delta_y = abs((col_to_int pc) - coli), abs(pr - row) in
+          (delta_x = 2 * delta_y) || (delta_y = 2 * delta_x)
+        end
+    end
+  | Rook -> 
+    begin
+      match mv.target, piece.location with
+      | None, _ -> false
+      | Some {col=col;row=row}, (pc, pr) ->
+        begin
+          let coli = col_to_int col in
+          let delta_x, delta_y = abs((col_to_int pc) - coli), abs(pr - row) in
+          (delta_x = 0) || (delta_y = 0)
+        end
+    end
+  | Queen ->
+    begin
+      match mv.target, piece.location with
+      | None, _ -> false
+      | Some {col=col;row=row}, (pc, pr) ->
+        begin
+          let coli = col_to_int col in
+          let delta_x, delta_y = abs((col_to_int pc) - coli), abs(pr - row) in
+          (delta_x = 0) || (delta_y = 0) || (delta_x = delta_y)
+        end
+    end
+  | King -> true (* There is only one king! *)
+
+let check_no_piece_interference (mv: Parser.mv) (piece: piece) (board: plain_board): bool =
+  (* This checks condition 2 *)
+  match piece.piece with
+  | Knight -> true(* Knight can move regardless *)
+  | _ -> 
+    begin
+      match mv.target with
+      | None -> false
+      | Some {col=col; row=row} ->
+        begin
+          match piece.location with
+          pc, pr -> 
+            let d = direction_of_delta ((col_to_int col) - (col_to_int pc)) (row - pr) in
+            let gen_loc_exn (dr: direction) (loc: location) (step_m: int): bool =
+              let step = step_m + 1 in
+              match step_direction step dr loc with
+              | None -> failwith "This location should be valid but failed!"
+              | Some (c, r) -> 
+                begin
+                  match List.nth_exn (List.nth_exn board (col_to_int c)) r with
+                  | Empty _ -> true
+                  | Occupied _ -> false
+                end
+            in
+            let checked_results = List.init ~f:(gen_loc_exn d (pc, pr)) (abs (row - pr) - 1) in
+            List.fold ~init:true ~f:(fun agg -> (fun x -> agg && x)) checked_results
+        end
+    end
+
+let check_move_validity (mv: Parser.mv) (piece: piece) (board: board): bool =
   (*
     Following cases disallow a move:
     1) The piece is not able to be moved to the target square in 1 move with its way of moving.
@@ -160,27 +313,6 @@ let check_move_validity (mv Parser.mv) (piece: piece) (board: board): bool =
 
     again we are not checking exclusively only those that allows us to dicern pieces.
   *)
-  let check_proper_move (piece: piece) (mv: Parser.mv) (board: plain_board) = bool
-    (* This checks condition 1) *)
-    match piece.piece with
-    | Pawn -> 
-      if mv.is_take then
-        match mv.target with
-        | None -> false (* Cannot move pawn to None *)
-        | Some {col=col;row=row} ->
-          begin
-            match piece.side with
-            | White -> let pm1, pm2 = step_direction NE 1 piece.location, step_direction NW 1 piece.location in
-          ;;
-            | Black -> let pm1, pm2 = step_direction SE 1 piece.location, step_direction SW 1 piece.location in
-        ;;
-            | _ -> failwith "Does not require move for Root!"
-          end
-
-let rec match_move_piece (mv: Parser.mv) (pl: piece list) (board: plain_board): piece option =
-  (* Locate the target piece to move on the board *)
-  match pl with
-  | [] -> None
   | h::tl -> (* First check if h is the desired piece *)
     if compare_piece_type mv.piece h then
       (* 

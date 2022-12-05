@@ -14,8 +14,6 @@ type piece =
   | King;; (* also indicate the avialability of castling either side *)
 val equal_piece: piece -> piece -> bool;;
 
-val equal
-
 type square = {
     col: char;
     row: int;

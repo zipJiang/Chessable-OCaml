@@ -10,7 +10,7 @@ type piece =
   | Bishop
   | Rook
   | Queen
-  | King;; (* also indicate the avialability of castling either side *)
+  | King [@@deriving eq, sexp];; (* also indicate the avialability of castling either side *)
 
 type square = {
     col: char;
@@ -51,20 +51,6 @@ type pgn = {
   lines: move;
   result: conclusion
 }
-
-let int_to_char (i: int): char =
-  match i with
-  | 0 -> '0'
-  | 1 -> '1'
-  | 2 -> '2'
-  | 3 -> '3'
-  | 4 -> '4'
-  | 5 -> '5'
-  | 6 -> '6'
-  | 7 -> '7'
-  | 8 -> '8'
-  | 9 -> '9'
-  | _ -> failwith "number cannot be cast to single digit char."
 
 let is_whitespace (c: char): bool =
   (* Helper function that checks white space. *)
@@ -428,7 +414,7 @@ let move_to_text (move: move): string =
     let target_square_text =
     match move.move.target with
     | None -> ""
-    | Some sqr -> String.of_char_list [sqr.col;int_to_char sqr.row]
+    | Some sqr -> String.of_char_list [sqr.col;Helper.int_to_char sqr.row]
     in
     let mate_check_text =
     if move.move.is_mate then

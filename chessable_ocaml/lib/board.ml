@@ -4,13 +4,12 @@ open Core
 
 type location = (char * int) [@@deriving sexp];;
 
+type direction = N | NE | E | SE | S | SW | W | NW;;
+
+type meta = Pawn of {ep: bool} | King of {ck: bool;cq: bool} | Other;;
+
 type piece = 
-  | Pawn of location * Parser.side * bool
-  | Knight of location * Parser.side
-  | Bishop of location * Parser.side
-  | Rook of location * Parser.side
-  | Queen of location * Parser.side
-  | King of (location * Parser.side * bool * bool) (* This only indicates the basic castling right, need to also consder checks sqaure guards etc. *)
+  {piece=Parser.piece;side=Parser.side;location=location; meta=meta}
 ;;
 
 type square =
@@ -54,44 +53,44 @@ let col_to_int (r: char): int =
 let initialize: board =
   (* This function will initialize a board to a playable state *)
   let white_pawns = [
-    Pawn (('a', 2), White, false);
-    Pawn (('b', 2), White, false);
-    Pawn (('c', 2), White, false);
-    Pawn (('d', 2), White, false);
-    Pawn (('e', 2), White, false);
-    Pawn (('f', 2), White, false);
-    Pawn (('g', 2), White, false);
-    Pawn (('h', 2), White, false);
+    {piece=Pawn; location=('a', 2); side=White; meta=Pawn {ep=false}};
+    {piece=Pawn; location=('b', 2); side=White; meta=Pawn {ep=false}};
+    {piece=Pawn; location=('c', 2); side=White; meta=Pawn {ep=false}};
+    {piece=Pawn; location=('d', 2); side=White; meta=Pawn {ep=false}};
+    {piece=Pawn; location=('e', 2); side=White; meta=Pawn {ep=false}};
+    {piece=Pawn; location=('f', 2); side=White; meta=Pawn {ep=false}};
+    {piece=Pawn; location=('g', 2); side=White; meta=Pawn {ep=false}};
+    {piece=Pawn; location=('h', 2); side=White; meta=Pawn {ep=false}};
   ] in
   let white_pieces = [
-    Rook (('a', 1), White);
-    Rook (('h', 1), White);
-    Knight (('b', 1), White);
-    Knight (('g', 1), White);
-    Bishop (('c', 1), White);
-    Bishop (('f', 1), White);
-    King (('e', 1), White, true, true);
-    Queen (('d', 1), White);
+    {piece=Rook;location=('a', 1);side=White;meta=Other};
+    {piece=Rook;location=('h', 1);side=White;meta=Other};
+    {piece=Knight;location=('b', 1);side=White;meta=Other};
+    {piece=Knight;location=('g', 1);side=White;meta=Other};
+    {piece=Bishop;location=('c', 1);side=White;meta=Other};
+    {piece=Bishop;location=('f', 1);side=White;meta=Other};
+    {piece=King;location=('e', 1);side=White;meta={ck=true;cq=true});
+    {piece=Queen;location=('d', 1);side=White;meta=Other};
   ] in
   let black_pawns = [
-    Pawn (('a', 7), Black, false);
-    Pawn (('b', 7), Black, false);
-    Pawn (('c', 7), Black, false);
-    Pawn (('d', 7), Black, false);
-    Pawn (('e', 7), Black, false);
-    Pawn (('f', 7), Black, false);
-    Pawn (('g', 7), Black, false);
-    Pawn (('h', 7), Black, false);
+    {piece=Pawn; location=('a', 7); side=Black; meta=Pawn {ep=false}};
+    {piece=Pawn; location=('b', 7); side=Black; meta=Pawn {ep=false}};
+    {piece=Pawn; location=('c', 7); side=Black; meta=Pawn {ep=false}};
+    {piece=Pawn; location=('d', 7); side=Black; meta=Pawn {ep=false}};
+    {piece=Pawn; location=('e', 7); side=Black; meta=Pawn {ep=false}};
+    {piece=Pawn; location=('f', 7); side=Black; meta=Pawn {ep=false}};
+    {piece=Pawn; location=('g', 7); side=Black; meta=Pawn {ep=false}};
+    {piece=Pawn; location=('h', 7); side=Black; meta=Pawn {ep=false}};
   ] in
   let black_pieces = [
-    Rook (('a', 8), Black);
-    Rook (('h', 8), Black);
-    Knight (('b', 8), Black);
-    Knight (('g', 8), Black);
-    Bishop (('c', 8), Black);
-    Bishop (('f', 8), Black);
-    King (('e', 8), Black, true, true);
-    Queen (('d', 8), Black);
+    {piece=Rook;location=('a', 8);side=Black;meta=Other};
+    {piece=Rook;location=('h', 8);side=Black;meta=Other};
+    {piece=Knight;location=('b', 8);side=Black;meta=Other};
+    {piece=Knight;location=('g', 8);side=Black;meta=Other};
+    {piece=Bishop;location=('c', 8);side=Black;meta=Other};
+    {piece=Bishop;location=('f', 8);side=Black;meta=Other};
+    {piece=King;location=('e', 8);side=Black;meta={ck=true;cq=true});
+    {piece=Queen;location=('d', 8);side=Black;meta=Other};
   ] in
   let rec assign_piece_to_row_exn (pl: piece list) (r: int) (c: int): square list =
     (* Assign 8 pieces to a list of row *)
@@ -126,18 +125,59 @@ let initialize: board =
     side_to_play=White
   }
 
-let compare_piece_type (pp: Parser.piece) (pb: piece):  bool =
-  (* Compare whether they are the same piece type *)
-  match pp, pb with
-  | Pawn, (Pawn _) -> true
-  | King, (King _) -> true
-  | Bishop, (Bishop _) -> true
-  | Knight, (Knight _) -> true
-  | Rook, (Rook _) -> true
-  | Queen, (Queen _) -> true
-  | _ -> false
+let step_direction (step: int) (d: direction) (loc: location): location option =
+  (* Moving starting from a direction and several steps to a direction *)
+  match loc with
+  | col, row -> 
+    let coli = col_to_int col in
+    begin
+    let hm, vm = match d with
+    | N -> (0, 1)
+    | NE -> (1, 1)
+    | E -> (1, 0)
+    | SE -> (1, -1)
+    | S -> (0, -1)
+    | SW -> (-1, -1)
+    | W -> (-1, 0)
+    | NW -> (-1, 1)
+    let coli, row = coli + step * vm, row + step * hm in
+    if (coli < 1 || coli > 8) || (row < 1 || row > 8) then
+      None
+    else
+      Some (col_of_int coli, row)
+    end
 
-let rec match_move_piece (mv: Parser.mv) (pl: piece list): piece option =
+let compare_piece_type (pp: Parser.piece) (pb: piece): bool =
+  (* Compare whether they are the same piece type *)
+  equal_piece pb.piece pp
+
+let check_move_validity (mv Parser.mv) (piece: piece) (board: board): bool =
+  (*
+    Following cases disallow a move:
+    1) The piece is not able to be moved to the target square in 1 move with its way of moving.
+    2) There is piece interferring between the target and the current location
+    3) The move discovers a check by the opponent.
+
+    again we are not checking exclusively only those that allows us to dicern pieces.
+  *)
+  let check_proper_move (piece: piece) (mv: Parser.mv) (board: plain_board) = bool
+    (* This checks condition 1) *)
+    match piece.piece with
+    | Pawn -> 
+      if mv.is_take then
+        match mv.target with
+        | None -> false (* Cannot move pawn to None *)
+        | Some {col=col;row=row} ->
+          begin
+            match piece.side with
+            | White -> let pm1, pm2 = step_direction NE 1 piece.location, step_direction NW 1 piece.location in
+          ;;
+            | Black -> let pm1, pm2 = step_direction SE 1 piece.location, step_direction SW 1 piece.location in
+        ;;
+            | _ -> failwith "Does not require move for Root!"
+          end
+
+let rec match_move_piece (mv: Parser.mv) (pl: piece list) (board: plain_board): piece option =
   (* Locate the target piece to move on the board *)
   match pl with
   | [] -> None
@@ -148,6 +188,34 @@ let rec match_move_piece (mv: Parser.mv) (pl: piece list): piece option =
          Notice that if no start_position annotation is given we
          identify piece with move validity.
       *)
+      match mv.start_spec with
+      | None -> 
+        begin
+          (* 
+             Unfortunately need to match with move possibility
+          *)
+        end
+      | Some c -> if (Char.(<=) c '8') && (Char.(>=) c '1') then
+        (* Annotation is a row *)
+        begin
+        match h with
+        | {piece=_;location=(_;row);side=_;meta=_} ->
+          (* Now we know that piece matches, lets check whether location matches the annotation *)
+          if (Helper.int_to_char c) = row then
+            Some h
+          else
+            match_move_piece mv tl
+        end
+        else if  (Char.(<=) c 'h') && (Char.(>=) c 'a') then
+          (* Annotation is a row *)
+        begin
+        match h with
+        | {piece=_;location=(col;_);side=_;meta=_} ->
+          if c = col then
+            Some h
+          else
+            match_move_piece mv tl
+        end
     else 
       match_move_piece mv tl
 

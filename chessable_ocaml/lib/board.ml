@@ -2,20 +2,16 @@ open Core
 
 (* Notice that we don't need to track the full board hyperstates here because we have all the moves to this position and will have a javascript based chess script for checking *)
 
-type location = (char * int);;
+type location = (char * int) [@@deriving sexp];;
 
-type side =
-  | White
-  | Black
-
- type piece = 
-    | Pawn of location * side * bool
-    | Knight of location * side
-    | Bishop of location * side
-    | Rook of location * side
-    | Queen of location * side
-    | King of (location * side * bool * bool) (* This only indicates the basic castling right, need to also consder checks sqaure guards etc. *)
-    [@@deriving sexp];;
+type piece = 
+  | Pawn of location * Parser.side * bool
+  | Knight of location * Parser.side
+  | Bishop of location * Parser.side
+  | Rook of location * Parser.side
+  | Queen of location * Parser.side
+  | King of (location * Parser.side * bool * bool) (* This only indicates the basic castling right, need to also consder checks sqaure guards etc. *)
+;;
 
 type square =
     | Empty of location
@@ -28,7 +24,7 @@ type board = {
   board: plain_board;
   white_pieces: piece list;
   black_pieces: piece list;
-  side_to_play: side;
+  side_to_play: Parser.side;
 }
 
 let col_of_int (i: int): char =
@@ -130,8 +126,39 @@ let initialize: board =
     side_to_play=White
   }
 
+let compare_piece_type (pp: Parser.piece) (pb: piece):  bool =
+  (* Compare whether they are the same piece type *)
+  match pp, pb with
+  | Pawn, (Pawn _) -> true
+  | King, (King _) -> true
+  | Bishop, (Bishop _) -> true
+  | Knight, (Knight _) -> true
+  | Rook, (Rook _) -> true
+  | Queen, (Queen _) -> true
+  | _ -> false
+
+let rec match_move_piece (mv: Parser.mv) (pl: piece list): piece option =
+  (* Locate the target piece to move on the board *)
+  match pl with
+  | [] -> None
+  | h::tl -> (* First check if h is the desired piece *)
+    if compare_piece_type mv.piece h then
+      (* 
+         Check whether we are able to match further annotation.
+         Notice that if no start_position annotation is given we
+         identify piece with move validity.
+      *)
+    else 
+      match_move_piece mv tl
+
+
 let make_move (move: Parser.move) (board: board): board =
   (* 
      This is the core functionality of the board that takes in a board, and a move,
      and return the board after the move.
   *)
+  if Parser.equal_side (move.side) (board.side_to_play) then
+    (* Should be able to play out the move *)
+    let mv = move.move in (* Notice that the piece annotation in mv is of Parser.piece *)
+  else 
+    failwith "Cannot playout the given move because of playing side conflict!"

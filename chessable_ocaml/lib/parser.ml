@@ -2,7 +2,7 @@
 
 open Core
 
-type side = White | Black | Root;;
+type side = White | Black | Root [@@deriving eq, sexp];;
 
 type piece =
     Pawn (* indicate whether a pawn can be captured en passant *)

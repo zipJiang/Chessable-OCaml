@@ -2,7 +2,8 @@
 
 (* Notice that the move type in this module is different from the move type in the repertoire*)
 
-type side = White | Black | Root;;
+type side = White | Black | Root ;;
+val equal_side: side -> side -> bool;;
 
 type piece =
     Pawn (* indicate whether a pawn can be captured en passant *)
@@ -17,7 +18,18 @@ type square = {
     row: int;
 };;
 
-type mv;;
+type mv = {
+  piece: piece;
+  target: square option;
+  start_spec: char option;
+  is_check: bool;
+  is_mate: bool;
+  is_take: bool;
+  is_castle_q: bool;
+  is_castle_k: bool;
+  remark: string option;
+  promote: piece option; (* Could have no promotion *)
+};;
 
 type move = {
   side: side;

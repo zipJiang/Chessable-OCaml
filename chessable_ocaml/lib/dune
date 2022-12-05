@@ -1,4 +1,4 @@
 (library
- (name parser)
- (modules parser)
+ (name chessable_ocaml)
+ (modules parser board)
  (libraries core))

@@ -4,13 +4,13 @@ open Core
 
 type side = White | Black | Root;;
 
- type piece =
-      Pawn (* indicate whether a pawn can be captured en passant *)
-    | Knight
-    | Bishop
-    | Rook
-    | Queen
-    | King;; (* also indicate the avialability of castling either side *)
+type piece =
+    Pawn (* indicate whether a pawn can be captured en passant *)
+  | Knight
+  | Bishop
+  | Rook
+  | Queen
+  | King;; (* also indicate the avialability of castling either side *)
 
 type square = {
     col: char;

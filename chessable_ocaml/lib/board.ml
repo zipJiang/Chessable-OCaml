@@ -52,7 +52,7 @@ type square =
 type plain_board = square list list;;
 
 let get_square (board: plain_board) (c: char) (r: int): square =
-  List.nth_exn (List.nth_exn board ((col_to_int c) - 1)) (r - 1)
+  List.nth_exn (List.nth_exn board (r - 1)) (col_to_int c - 1)
  
 let set_square (board: plain_board) (square: square): plain_board =
   (* Get information is square *)
@@ -61,9 +61,9 @@ let set_square (board: plain_board) (square: square): plain_board =
     | Occupied (loc, _) -> loc
   in
   let rec set_board_pos (ic: int) (ir: int) (square: square) (board: plain_board): plain_board =
-    if ic > 1 then
+    if ir > 1 then
       match board with
-      | h::tl -> h::(set_board_pos (ic - 1) ir square tl)
+      | h::tl -> h::(set_board_pos ic (ir - 1) square tl)
       | [] -> board
     else
       let rec set_square_list_pos (pos: int) (square: square) (sl: square list): square list =
@@ -78,7 +78,7 @@ let set_square (board: plain_board) (square: square): plain_board =
       in
       match board with
       | h::tl ->
-        (set_square_list_pos ir square h)::tl
+        (set_square_list_pos ic square h)::tl
       | [] -> board
   in
   let lci = col_to_int lc in
@@ -105,13 +105,13 @@ let initialize: board =
   ] in
   let white_pieces = [
     {piece=Rook;location=('a', 1);side=White;meta=Other};
-    {piece=Rook;location=('h', 1);side=White;meta=Other};
     {piece=Knight;location=('b', 1);side=White;meta=Other};
-    {piece=Knight;location=('g', 1);side=White;meta=Other};
     {piece=Bishop;location=('c', 1);side=White;meta=Other};
-    {piece=Bishop;location=('f', 1);side=White;meta=Other};
-    {piece=King;location=('e', 1);side=White;meta=King {ck=true;cq=true}};
     {piece=Queen;location=('d', 1);side=White;meta=Other};
+    {piece=King;location=('e', 1);side=White;meta=King {ck=true;cq=true}};
+    {piece=Bishop;location=('f', 1);side=White;meta=Other};
+    {piece=Knight;location=('g', 1);side=White;meta=Other};
+    {piece=Rook;location=('h', 1);side=White;meta=Other};
   ] in
   let black_pawns = [
     {piece=Pawn; location=('a', 7); side=Black; meta=Pawn {ep=false}};
@@ -125,13 +125,13 @@ let initialize: board =
   ] in
   let black_pieces = [
     {piece=Rook;location=('a', 8);side=Black;meta=Other};
-    {piece=Rook;location=('h', 8);side=Black;meta=Other};
     {piece=Knight;location=('b', 8);side=Black;meta=Other};
-    {piece=Knight;location=('g', 8);side=Black;meta=Other};
     {piece=Bishop;location=('c', 8);side=Black;meta=Other};
-    {piece=Bishop;location=('f', 8);side=Black;meta=Other};
-    {piece=King;location=('e', 8);side=Black;meta=King {ck=true;cq=true}};
     {piece=Queen;location=('d', 8);side=Black;meta=Other};
+    {piece=King;location=('e', 8);side=Black;meta=King {ck=true;cq=true}};
+    {piece=Bishop;location=('f', 8);side=Black;meta=Other};
+    {piece=Knight;location=('g', 8);side=Black;meta=Other};
+    {piece=Rook;location=('h', 8);side=Black;meta=Other};
   ] in
   let rec assign_piece_to_row_exn (pl: piece list) (r: int) (c: int): square list =
     (* Assign 8 pieces to a list of row *)
@@ -198,7 +198,7 @@ let step_direction (step: int) (d: direction) (loc: location): location option =
     | W -> (-1, 0)
     | NW -> (-1, 1)
     in
-    let coli, row = coli + step * vm, row + step * hm in
+    let coli, row = coli + step * hm, row + step * vm in
     if (coli < 1 || coli > 8) || (row < 1 || row > 8) then
       None
     else
@@ -337,7 +337,7 @@ let check_no_piece_interference (mv: Parser.mv) (piece: piece) (board: plain_boa
                   | Occupied _ -> false
                 end
             in
-            let checked_results = List.init ~f:(gen_loc_exn d (pc, pr)) (abs (row - pr) - 1) in
+            let checked_results = List.init ~f:(gen_loc_exn d (pc, pr)) (max (abs (row - pr)) (abs (col_to_int col - col_to_int pc)) - 1) in
             List.fold ~init:true ~f:(fun agg -> (fun x -> agg && x)) checked_results
         end
     end
@@ -494,7 +494,7 @@ let rec update_piece_list (pl: piece list) (from_: location) (to_: location) (pr
         in
         let piece = {
           piece=(match promotion with None -> piece.piece | Some prm -> prm);
-          location=piece.location;
+          location=to_;
           side=piece.side;
           meta=meta;
         } in
@@ -547,7 +547,7 @@ let set_piece_position (from_: location) (to_: location) (board: board) (flip_si
     | Empty _ -> failwith "No piece at the starting position!"
     | Occupied (_, piece) -> 
       (* construct a new square *)
-      let source_square, target_square = (Empty from_, Occupied (to_, {piece=(match promotion with None -> piece.piece | Some prm -> prm);location=piece.location;side=piece.side;meta=(match promotion with None -> piece.meta | Some _ -> Other)})) in
+      let source_square, target_square = (Empty from_, Occupied (to_, {piece=(match promotion with None -> piece.piece | Some prm -> prm);location=to_;side=piece.side;meta=(match promotion with None -> piece.meta | Some _ -> Other)})) in
       let updated_plain_board = set_square (set_square board.board source_square) target_square in
       (* Also need to update the piece storage information *)
       match board.side_to_play with
@@ -591,8 +591,9 @@ let rec move_piece (mv: Parser.mv) (pl: piece list) (board: board): board =
       | White -> set_piece_position ('a', 1) ('d', 1) (set_piece_position ('e', 1) ('c', 1) board false None) true None
       | Black -> set_piece_position ('a', 8) ('d', 8) (set_piece_position ('e', 8) ('c', 8) board false None) true None
       | _ -> failwith "Never move for root!"
-    else if check_move_validity mv h board then
+    else if (Parser.equal_piece mv.piece h.piece) && (check_move_validity mv h board) then
       (* Move the piece here *)
+      let _ = ignore(Printf.printf "%s\n" (string_of_location h.location)) in
       match mv.target with
       | Some {col=col;row=row} ->
         begin
@@ -613,7 +614,7 @@ let make_move (move: Parser.move) (board: board): board =
     let piece_list = match move.side with
     | White -> board.white_pieces
     | Black -> board.black_pieces
-    | _ -> failwith "Cannot move feor root side!"
+    | _ -> failwith "Cannot move for root side!"
     in
     move_piece mv piece_list board
   else 
@@ -621,7 +622,15 @@ let make_move (move: Parser.move) (board: board): board =
 
 (* Below we define some board printing function that allows us to ezamine board state *)
 let string_of_piece (piece: piece): string =
-  String.of_char_list [(Parser.string_of_piece piece.piece);':';string_of_location piece.location]
+  let pstr = match piece.side with
+  | Black -> begin
+      match String.lowercase (Parser.string_of_piece piece.piece) with
+      | "#" -> "%"
+      | p -> p
+    end
+  | White -> Parser.string_of_piece piece.piece
+  | _ -> failwith "cannot use the root side to initialize piece!" in
+  String.concat ~sep:"" [pstr;":";string_of_location piece.location]
 
 let rec piece_list_to_string_list (pl: piece list): string list =
   (* Try to generate a string for the list of pieces *)
@@ -633,16 +642,27 @@ let string_of_square (sqr: square): string =
   (* Try to generate a square string *)
   match sqr with
   | Empty _ -> "[ ]"
-  | Occupied (_, piece) -> Printf.sprintf "[%s]" (Parser.string_of_piece piece.piece)
+  | Occupied (_, piece) -> 
+    begin
+    let pstr = match piece.side with
+      | Black -> begin
+          match String.lowercase (Parser.string_of_piece piece.piece) with
+          | "#" -> "%"
+          | p -> p
+        end
+      | White -> Parser.string_of_piece piece.piece
+      | _ -> failwith "cannot use the root side to initialize piece!" in
+      Printf.sprintf "[%s]" pstr
+    end
 
 let square_list_to_string_list (sl: square list): string =
   String.concat ~sep:"" (List.map ~f:string_of_square sl)
 
 let plain_board_to_string_list (sll: plain_board): string =
-  String.concat ~sep:"\n" (List.map ~f:square_list_to_string_list sll)
+  String.concat ~sep:"\r\n" (List.rev (List.map ~f:square_list_to_string_list sll))
 
-let board_to_string (board: board): string = 
+(* let board_to_string (board: board): string = 
   (* This function should be very  useful in examine board state *)
   let white_piece_str = String.concat ~sep:" " ("White: " :: (piece_list_to_string_list board.white_pieces)) in
   let black_piece_str = String.concat ~sep:" " ("Black: " :: (piece_list_to_string_list board.black_pieces)) in
-  let board_str = plain_board_to_string_list board.board in
+  let board_str = plain_board_to_string_list board.board in *)

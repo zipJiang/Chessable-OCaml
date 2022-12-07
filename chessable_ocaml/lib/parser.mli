@@ -13,7 +13,7 @@ type piece =
   | Queen
   | King;; (* also indicate the avialability of castling either side *)
 val equal_piece: piece -> piece -> bool;;
-val string_of_pice: piece -> string;;
+val string_of_piece: piece -> string;;
 
 type square = {
     col: char;

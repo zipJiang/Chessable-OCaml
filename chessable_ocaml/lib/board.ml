@@ -4,6 +4,11 @@ open Core
 
 type location = (char * int) [@@deriving eq, sexp];;
 
+let string_of_location (loc: location): string =
+  match loc with
+  | c, r ->
+    String.of_char_list [c;Helper.int_to_char r]
+
 type direction = N | NE | E | SE | S | SW | W | NW [@@deriving eq];;
 
 type meta = Pawn of {ep: bool} | King of {ck: bool;cq: bool} | Other;;
@@ -139,10 +144,10 @@ let initialize: board =
     | 0 -> []
     | _ -> (Empty (col_of_int (9 - n), r)) :: (rows_of_empty_squares r (n - 1))
   in
-  let squares_2 = assign_piece_to_row_exn white_pawns 2 0 in
-  let squares_1 = assign_piece_to_row_exn white_pieces 1 0 in
-  let squares_7 = assign_piece_to_row_exn black_pawns 7 0 in
-  let squares_8 = assign_piece_to_row_exn black_pieces 8 0 in
+  let squares_2 = assign_piece_to_row_exn white_pawns 2 1 in
+  let squares_1 = assign_piece_to_row_exn white_pieces 1 1 in
+  let squares_7 = assign_piece_to_row_exn black_pawns 7 1 in
+  let squares_8 = assign_piece_to_row_exn black_pieces 8 1 in
   let plain_board = [
     squares_1;
     squares_2;
@@ -613,3 +618,31 @@ let make_move (move: Parser.move) (board: board): board =
     move_piece mv piece_list board
   else 
     failwith "Cannot playout the given move because of playing side conflict!"
+
+(* Below we define some board printing function that allows us to ezamine board state *)
+let string_of_piece (piece: piece): string =
+  String.of_char_list [(Parser.string_of_piece piece.piece);':';string_of_location piece.location]
+
+let rec piece_list_to_string_list (pl: piece list): string list =
+  (* Try to generate a string for the list of pieces *)
+  match pl with
+  | [] -> []
+  | p::tl -> (string_of_piece p) :: (piece_list_to_string_list tl)
+
+let string_of_square (sqr: square): string = 
+  (* Try to generate a square string *)
+  match sqr with
+  | Empty _ -> "[ ]"
+  | Occupied (_, piece) -> Printf.sprintf "[%s]" (Parser.string_of_piece piece.piece)
+
+let square_list_to_string_list (sl: square list): string =
+  String.concat ~sep:"" (List.map ~f:string_of_square sl)
+
+let plain_board_to_string_list (sll: plain_board): string =
+  String.concat ~sep:"\n" (List.map ~f:square_list_to_string_list sll)
+
+let board_to_string (board: board): string = 
+  (* This function should be very  useful in examine board state *)
+  let white_piece_str = String.concat ~sep:" " ("White: " :: (piece_list_to_string_list board.white_pieces)) in
+  let black_piece_str = String.concat ~sep:" " ("Black: " :: (piece_list_to_string_list board.black_pieces)) in
+  let board_str = plain_board_to_string_list board.board in

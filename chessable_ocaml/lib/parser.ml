@@ -12,6 +12,15 @@ type piece =
   | Queen
   | King [@@deriving eq, sexp];; (* also indicate the avialability of castling either side *)
 
+let string_of_piece (piece: piece): string =
+  match piece with
+  | Pawn -> "#"
+  | Knight -> "N"
+  | Bishop -> "B"
+  | Rook -> "R"
+  | Queen -> "Q"
+  | King -> "K"
+
 type square = {
     col: char;
     row: int;

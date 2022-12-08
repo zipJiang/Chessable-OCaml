@@ -1,0 +1,9 @@
+(test
+ (name tests)
+ (libraries
+  core
+  ounit2
+  chessable_ocaml
+ )
+ (preprocess (pps ppx_jane))
+)

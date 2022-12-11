@@ -522,6 +522,19 @@ let rec disable_castling (pl: piece list) (kq: char): piece list =
       | _ -> piece::(disable_castling tl kq)
     end
 
+let rec take_piece (pl: piece list) (loc: location): piece list =
+  (* This function takes a board position and takes a piece off that position *)
+  (* Notice that we don't have to modify the board because set_board_position will do it for us *)
+  match pl with
+  | [] -> []
+  | h::tl -> 
+    begin
+      if equal_location h.location loc then
+        tl
+      else
+        h::(take_piece tl loc)
+    end
+
 let set_piece_position (from_: location) (to_: location) (board: board) (flip_side: bool) (promotion: Parser.piece option): board =
   (* This set the piece form position from_ to position to_ *)
   (* First if we are moving anything from or to a1 or h1 disable castling for white, a8 or h8 for black *)
@@ -551,15 +564,16 @@ let set_piece_position (from_: location) (to_: location) (board: board) (flip_si
       let updated_plain_board = set_square (set_square board.board source_square) target_square in
       (* Also need to update the piece storage information *)
       match board.side_to_play with
+      (* Notice that we do not trust the take notation because some chessplayer does not use them. *)
       | White -> {
         board=updated_plain_board;
         white_pieces=update_piece_list board.white_pieces from_ to_ promotion;
-        black_pieces=board.black_pieces;
+        black_pieces=take_piece board.black_pieces to_;
         side_to_play=if flip_side then Black else White;
       }
       | Black -> {
         board=updated_plain_board;
-        white_pieces=board.white_pieces;
+        white_pieces=take_piece board.white_pieces to_;
         black_pieces=update_piece_list board.black_pieces from_ to_ promotion;
         side_to_play=if flip_side then White else Black;
       }

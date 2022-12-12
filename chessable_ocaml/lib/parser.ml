@@ -14,7 +14,7 @@ type piece =
 
 let string_of_piece (piece: piece): string =
   match piece with
-  | Pawn -> "#"
+  | Pawn -> "P"
   | Knight -> "N"
   | Bishop -> "B"
   | Rook -> "R"

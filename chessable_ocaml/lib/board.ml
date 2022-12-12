@@ -639,7 +639,7 @@ let string_of_piece (piece: piece): string =
   let pstr = match piece.side with
   | Black -> begin
       match String.lowercase (Parser.string_of_piece piece.piece) with
-      | "#" -> "%"
+      | "#" -> "%" (* After update this is no longer needed. *)
       | p -> p
     end
   | White -> Parser.string_of_piece piece.piece
@@ -680,3 +680,129 @@ let plain_board_to_string_list (sll: plain_board): string =
   let white_piece_str = String.concat ~sep:" " ("White: " :: (piece_list_to_string_list board.white_pieces)) in
   let black_piece_str = String.concat ~sep:" " ("Black: " :: (piece_list_to_string_list board.black_pieces)) in
   let board_str = plain_board_to_string_list board.board in *)
+
+let get_castling_spec (board: board): string =
+  (* Get the castling specification from the board *)
+  let rec check_king_castling (pl: piece list): string =
+    match pl with
+    | [] -> ""
+    | h::tl -> begin
+        match h with
+        | {piece=piece;side=_;location=_;meta=meta} -> 
+          begin
+            match piece with
+            | King -> 
+              begin
+                match meta with
+                | King {ck=ck;cq=cq} -> begin
+                    String.concat ~sep:"" [(if ck then "K" else "");(if cq then "Q" else "")]
+                  end
+                | _ -> failwith "Meta information not matched!"
+              end
+            | _ -> check_king_castling tl
+          end
+      end in
+  let wc_str = check_king_castling board.white_pieces in
+  let bc_str = String.lowercase @@ check_king_castling board.black_pieces in
+  match String.concat ~sep:"" [wc_str;bc_str] with
+  | "" -> "-"
+  | s -> s
+
+let get_turn_spec: string =
+  "0 1"
+
+let get_side_spec (board: board): string =
+  match board.side_to_play with
+  | White -> "w"
+  | Black -> "b"
+  | _ -> failwith "Cannot save FEN with Root side to play!"
+
+let get_plain_board_spec (board: plain_board): string =
+  (* First we define a function that maps row to string *)
+  let rec get_row_spec_rev (connected_empty_sqr: int) (rl: square list): string list =
+    (* This function turns a row into FEN representation (Notice that the representation is reversed) *)
+    match rl with
+    | [] -> if connected_empty_sqr = 0 then
+      []
+      else [Printf.sprintf "%d" connected_empty_sqr]
+    | h::tl -> 
+      (* This means we need to modify the current square representation *)
+      begin
+      match h with
+      | Empty _ -> get_row_spec_rev (connected_empty_sqr + 1) tl
+      | Occupied (_, piece) ->
+        let current_piece_str = match piece.side with
+          | White -> Parser.string_of_piece piece.piece
+          | Black -> String.lowercase (Parser.string_of_piece piece.piece)
+          | _ -> failwith "Don't have piece for Root."
+        in
+        let prev_empty_str = if connected_empty_sqr > 0 then Printf.sprintf "%d" connected_empty_sqr else "" in
+        prev_empty_str::current_piece_str::(get_row_spec_rev 0 tl)
+      end
+    in
+  String.concat ~sep:"/" (List.rev (List.map ~f:(fun x -> String.concat ~sep:"" (get_row_spec_rev 0 x)) board))
+
+let get_eps_spec (board: board): string =
+  (* 
+    Check the piece list of the side that just moved, and see whether we can take en passant,
+    Notice that the move happens before the current side to move, so we need to check the
+    reversed piece-list.
+  *)
+  let rec get_eps_spec_pl (pl: piece list): string =
+    match pl with
+    | [] -> "-"
+    | h::tl -> 
+      begin
+        match h with
+        {piece=piece;location=loc;side=_;meta=meta} -> 
+          if Parser.equal_piece piece Pawn then
+            begin
+              match meta with 
+              | Pawn {ep=ep} -> 
+                if ep then
+                  begin
+                    (* Get the en passant square based on the pawn location *)
+                    let direction = match h.side with
+                    | White -> S
+                    | Black -> N
+                    | _ -> failwith "Cannot get pawn information for Root."
+                    in
+                    begin
+                      match step_direction 1 direction loc with
+                      | None -> failwith "Failed to get the en passant square of a pawn."
+                      | Some loc_new -> string_of_location loc_new
+                    end
+                  end
+                else
+                  get_eps_spec_pl tl
+              | _ -> failwith "Spec does not match for Pawn piece."
+            end
+          else
+            get_eps_spec_pl tl
+      end
+  in
+  match board.side_to_play with
+  | White -> get_eps_spec_pl board.black_pieces
+  | Black -> get_eps_spec_pl board.white_pieces
+  | _ -> failwith "Cannot get en passent spec for Root."
+
+let to_fen (board: board): string =
+  (* This function will record a board into FEN notation *)
+  (* Notice that our FEN is partial, as that the half moves recorded is always 0, as well as the turn_id *)
+  let castling_spec = get_castling_spec board in
+  let turn_spec = get_turn_spec in
+  let side_to_move =  get_side_spec board in
+  let plain_board_spec = get_plain_board_spec board.board in
+  let eps_spec = get_eps_spec board in
+  (* Now we get all the FEN information, we need to generate a final FEN string *)
+  String.concat ~sep:" " [plain_board_spec;side_to_move;castling_spec;eps_spec;turn_spec]
+
+let from_fen (fen: string): board =
+  (* This is the board recover function that allows construction of the board from fen *)
+  (* With this implementation we allow the usage of FEN string as the hash of a board position *)
+  match String.split ~on:' ' fen with
+  | plain_board_spec::side_to_move::castling_spec::eps_spec::turn_spec::empty_tl -> 
+    begin
+      (* Here we start the parsing utility *)
+    end
+  | _ -> failwith "Not enough number of field"

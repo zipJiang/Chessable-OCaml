@@ -20,6 +20,20 @@ type piece =
    meta:meta}
 ;;
 
+let piece_from_char (c: char) (loc: location): piece =
+  let side = match Char.is_lowercase c with
+    | true -> Parser.White
+    | false -> Parser.Black in
+  let piece, meta = match Char.lowercase c with
+  | 'p' -> Parser.Pawn, Pawn {ep=false}
+  | 'k' -> Parser.King, King {ck=true;cq=true}
+  | 'r' -> Parser.Rook, Other
+  | 'n' -> Parser.Knight, Other
+  | 'b' -> Parser.Bishop, Other
+  | 'q' -> Parser.Queen, Other
+  | _ -> failwith "Invalid piece char spec." in
+  {piece=piece;side=side;location=loc;meta=meta}
+
 let col_of_int (i: int): char =
   match i with
   | 1 -> 'a'
@@ -797,12 +811,166 @@ let to_fen (board: board): string =
   (* Now we get all the FEN information, we need to generate a final FEN string *)
   String.concat ~sep:" " [plain_board_spec;side_to_move;castling_spec;eps_spec;turn_spec]
 
+let from_side_spec (str: string): Parser.side =
+  match str with
+  | "w" -> White
+  | "b" -> Black
+  | _ -> failwith "Not a valid side specification."
+
+let from_castling_spec (str: string): (meta * meta) =
+  (* We will generate two meta for white and black *)
+  match str with
+  | "KQkq" -> King {ck=true;cq=true}, King {ck=true;cq=true}
+  | "KQk" -> King {ck=true;cq=true}, King {ck=true;cq=false}
+  | "KQq" -> King {ck=true;cq=true}, King {ck=false;cq=true}
+  | "KQ" -> King {ck=true;cq=true}, King {ck=false;cq=false}
+  | "Kkq" -> King {ck=true;cq=false}, King {ck=true;cq=true}
+  | "Kk" -> King {ck=true;cq=false}, King {ck=true;cq=false}
+  | "Kq" -> King {ck=true;cq=false}, King {ck=false;cq=true}
+  | "K" -> King {ck=true;cq=false}, King {ck=false;cq=false}
+  | "Qkq" -> King {ck=false;cq=true}, King {ck=true;cq=true}
+  | "Qk" -> King {ck=false;cq=true}, King {ck=true;cq=false}
+  | "Qq" -> King {ck=false;cq=true}, King {ck=false;cq=true}
+  | "Q" -> King {ck=false;cq=true}, King {ck=false;cq=false}
+  | "kq" -> King {ck=false;cq=false}, King {ck=true;cq=true}
+  | "k" -> King {ck=false;cq=false}, King {ck=true;cq=false}
+  | "q" -> King {ck=false;cq=false}, King {ck=false;cq=true}
+  | "-" -> King {ck=false;cq=false}, King {ck=false;cq=false}
+  | _ -> failwith "Not valid castling specification."
+
+let from_turn_spec (str: string): int =
+  Int.of_string str
+
+let board_from_board_spec (str: string): plain_board =
+  let str_list = String.split ~on:'/' str in
+  let rec rows_of_empty_squares (r: int) (n: int) (s: int): square list =
+    match n with
+    | 0 -> []
+    | _ -> (Empty (col_of_int s, r + 1))::(rows_of_empty_squares r (n - 1) (s + 1)) in
+  let rec row_from_str (col_id: int) (row_id: int) (str: char list): square list =
+    match str with
+    | [] -> []
+    | h::tl ->
+      begin
+        if Char.(<=) '0' h && Char.(>=) '9' h then
+          let nss = (Int.of_string (String.of_char h)) in
+          let tail = (row_from_str (col_id + nss) row_id tl) in
+          (rows_of_empty_squares row_id nss col_id) @ tail
+        else
+          let tail = (row_from_str (col_id + 1) row_id tl) in
+          (Occupied ((col_of_int col_id, row_id), (piece_from_char h (col_of_int col_id, row_id))))::tail
+      end
+  in
+  (* Match row_from_str to a zip *)
+  let mapped_list = List.zip_exn str_list (List.init ~f:(fun x -> 9 - x) 8) in
+  List.rev (List.map ~f:(fun mp -> match mp with | str, rid -> row_from_str 0 rid (String.to_list str)) mapped_list)
+
+let eps_from_spec (str: string): (location * meta * Parser.side) option =
+  (* Generate a pawn meta that can be used to match *)
+  match str with
+  | "-" -> None
+  | _ ->
+    let col, row = match String.to_list str with 
+    | c::r::_ -> c, r
+    | _ -> failwith "Incorrect number of chars!"
+    in
+    let row = Int.of_string @@ String.of_char row in
+    (* Some ((col,row), Pawn {ep=true}) *)
+    let row, side = match row with
+    | 3 -> 4, Parser.White
+    | 6 -> 5, Parser.Black
+    | _ -> failwith "Invalid en passant target square."
+    in
+    Some ((col,row), Pawn {ep=true}, side)
+
+let piece_lists_from_board (board: plain_board) : (piece list) * (piece list) =
+  (* Now we iterate over the board and get all pieces *)
+  let rec piece_list_from_square_list (sl: square list): (piece list) * (piece list) =
+    (* This function will run on square list and generate result *)
+    match sl with
+    | [] -> [], []
+    | h::tl -> 
+      begin
+        match h with
+        | Empty _ -> piece_list_from_square_list tl
+        | Occupied (_, piece) -> begin
+          match piece, piece_list_from_square_list tl with
+          | {piece=_;location=_;side=side;meta=_}, (wl, bl) ->
+            begin
+              match side with
+              | White -> piece::wl, bl
+              | Black -> wl, piece::bl
+              | _ -> failwith "Cannot match side with root in piece recovery."
+            end
+        end
+      end in
+  (* Apply the piece list to all square list *)
+  List.fold ~f:(fun agg -> (fun x -> match agg, x with | (wa,ba), (w,b) -> (List.append wa w), (List.append ba b) )) ~init:([], []) (List.map ~f:piece_list_from_square_list board)
+
+let rec update_piece_meta (meta: meta) (loc_opt: location option) (pl: piece list): piece list =
+  (* loc_opt is provided for pawns *)
+  match meta with
+  | Other -> pl
+  | King _ -> 
+    begin
+      match pl with
+      | [] -> []
+      | h::tl -> 
+        begin
+          match h with
+          | {piece=King;location=loc;side=side;meta=_} -> {piece=King;location=loc;side=side;meta=meta}::tl
+          | _ -> h::(update_piece_meta meta loc_opt tl)
+        end
+    end
+  | Pawn _ ->
+    begin 
+      match loc_opt with
+      | None -> failwith "Not able to identify pawn if location is not provided!"
+      | Some loc -> 
+        begin
+          match pl with
+          | [] -> []
+          | h::tl ->
+            begin
+              match h with
+              | {piece=Pawn;location=loc_old;side=side;meta=_} -> 
+                if equal_location loc_old loc then 
+                  {piece=Pawn;location=loc;side=side;meta=meta}::tl
+                else
+                  h::(update_piece_meta meta loc_opt tl)
+              | _ -> h::(update_piece_meta meta loc_opt tl)
+            end
+        end
+    end
+
 let from_fen (fen: string): board =
   (* This is the board recover function that allows construction of the board from fen *)
   (* With this implementation we allow the usage of FEN string as the hash of a board position *)
   match String.split ~on:' ' fen with
-  | plain_board_spec::side_to_move::castling_spec::eps_spec::turn_spec::empty_tl -> 
+  | plain_board_spec::side_to_move::castling_spec::eps_spec::turn_spec::_ -> 
     begin
       (* Here we start the parsing utility *)
+      let side = from_side_spec side_to_move in
+      let white_king_meta, black_king_meta = from_castling_spec castling_spec in
+      (* Not using turn id *)
+      let _ = from_turn_spec turn_spec in
+      let board = board_from_board_spec plain_board_spec in
+      let white_pieces, black_pieces = piece_lists_from_board board in
+      (* Try to update the pieces if needed *)
+      let white_pieces = update_piece_meta white_king_meta None white_pieces in
+      let black_pieces = update_piece_meta black_king_meta None black_pieces in
+      (* Also if there are pawn meta we also need to update *)
+      let eps_opt = eps_from_spec eps_spec in
+      match eps_opt with
+      | None -> {board=board;white_pieces=white_pieces;black_pieces=black_pieces;side_to_play=side}
+      | Some (loc, pmeta, pside) -> 
+        begin
+          match pside with
+          | White -> 
+            {board=board;white_pieces=update_piece_meta pmeta (Some loc) white_pieces;black_pieces=black_pieces;side_to_play=side}
+          | Black ->
+            {board=board;white_pieces=white_pieces;black_pieces=update_piece_meta pmeta (Some loc) black_pieces;side_to_play=side}
+          | _ -> failwith "Cannot en passant pawn of root!"
+        end
     end
   | _ -> failwith "Not enough number of field"

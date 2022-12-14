@@ -221,3 +221,6 @@ let load_repertoire_from_file (filename: string): repertoire =
   | Error e -> failwith e
   | Ok prptr -> prptr in
   repertoire_of_portable prptr
+
+(* One reasonable way to create lines is to introduce lines where comments is given for a position *)
+(* Another reasonable way is to require memorization of all branching nodes *)

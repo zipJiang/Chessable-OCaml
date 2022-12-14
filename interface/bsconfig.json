@@ -1,0 +1,17 @@
+{
+  "name": "interface",
+  "version": "0.1.0",
+  "sources": {
+    "dir" : "src",
+    "subdirs" : true
+  },
+  "package-specs": {
+    "module": "es6",
+    "in-source": true
+  },
+  "jsx": {"version": 3, "v3-dependencies": ["rescript-relay"] },
+  "reason": {"react-jsx": 3},
+  "bs-dependencies": ["@rescript/react"],
+  "bsc-flags": ["-open ReactV3"],
+  "suffix": ".bs.js"
+}

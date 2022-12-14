@@ -1,0 +1,417 @@
+{
+  "lines": [],
+  "nodes": [
+    {
+      "node_id": 15,
+      "board_hash": "rnbqkbnr/ppp2ppp/8/3pp3/1P6/8/PBPPPPPP/RN1QKBNR w KQkq d6 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 14,
+      "board_hash": "r2qkb1r/1pp2pp1/p1npbn1p/4p3/1PP5/P3PN2/1B1PBPPP/R2QK1NR w KQkq - 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 13,
+      "board_hash": "r2qkb1r/1pp2ppp/p1npbn2/4p3/1PP5/P3PN2/1B1PBPPP/R2QK1NR b KQkq - 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 12,
+      "board_hash": "r2qkb1r/1pp2ppp/p1npbn2/4p3/1PP5/P3P3/1B1PBPPP/RN1QK1NR w KQkq - 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 11,
+      "board_hash": "r1bqkb1r/1pp2ppp/p1np1n2/4p3/1PP5/P3P3/1B1PBPPP/RN1QK1NR b KQkq - 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 10,
+      "board_hash": "r1bqkb1r/1pp2ppp/p1np1n2/4p3/1PP5/P3P3/1B1P1PPP/RN1QKBNR w KQkq - 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 9,
+      "board_hash": "r1bqkbnr/1pp2ppp/p1np4/4p3/1PP5/P3P3/1B1P1PPP/RN1QKBNR b KQkq - 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 8,
+      "board_hash": "r1bqkbnr/1pp2ppp/p1np4/4p3/1PP5/4P3/PB1P1PPP/RN1QKBNR w KQkq - 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 7,
+      "board_hash": "rnbqkbnr/1pp2ppp/p2p4/4p3/1PP5/4P3/PB1P1PPP/RN1QKBNR b KQkq - 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 6,
+      "board_hash": "rnbqkbnr/1pp2ppp/p2p4/4p3/1PP5/8/PB1PPPPP/RN1QKBNR w KQkq - 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 5,
+      "board_hash": "rnbqkbnr/ppp2ppp/3p4/4p3/1PP5/8/PB1PPPPP/RN1QKBNR b KQkq c3 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 4,
+      "board_hash": "rnbqkbnr/ppp2ppp/3p4/4p3/1P6/8/PBPPPPPP/RN1QKBNR w KQkq - 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 3,
+      "board_hash": "rnbqkbnr/pppp1ppp/8/4p3/1P6/8/PBPPPPPP/RN1QKBNR b KQkq - 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 2,
+      "board_hash": "rnbqkbnr/pppp1ppp/8/4p3/1P6/8/P1PPPPPP/RNBQKBNR w KQkq e6 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 1,
+      "board_hash": "rnbqkbnr/pppppppp/8/8/1P6/8/P1PPPPPP/RNBQKBNR b KQkq b3 0 1",
+      "continuations": []
+    },
+    {
+      "node_id": 0,
+      "board_hash": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "continuations": []
+    }
+  ],
+  "transitions": [
+    {
+      "transition_id": 14,
+      "from_": 3,
+      "to_": 15,
+      "move": {
+        "move": {
+          "piece": [ "Pawn" ],
+          "target": { "col": "d", "row": 5 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "Black" ],
+        "turn_id": 2,
+        "comment": null
+      }
+    },
+    {
+      "transition_id": 13,
+      "from_": 13,
+      "to_": 14,
+      "move": {
+        "move": {
+          "piece": [ "Pawn" ],
+          "target": { "col": "h", "row": 6 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "Black" ],
+        "turn_id": 7,
+        "comment": "NiktheFist won by resignation"
+      }
+    },
+    {
+      "transition_id": 12,
+      "from_": 12,
+      "to_": 13,
+      "move": {
+        "move": {
+          "piece": [ "Knight" ],
+          "target": { "col": "f", "row": 3 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "White" ],
+        "turn_id": 7,
+        "comment": null
+      }
+    },
+    {
+      "transition_id": 11,
+      "from_": 11,
+      "to_": 12,
+      "move": {
+        "move": {
+          "piece": [ "Bishop" ],
+          "target": { "col": "e", "row": 6 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "Black" ],
+        "turn_id": 6,
+        "comment": null
+      }
+    },
+    {
+      "transition_id": 10,
+      "from_": 10,
+      "to_": 11,
+      "move": {
+        "move": {
+          "piece": [ "Bishop" ],
+          "target": { "col": "e", "row": 2 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "White" ],
+        "turn_id": 6,
+        "comment": null
+      }
+    },
+    {
+      "transition_id": 9,
+      "from_": 9,
+      "to_": 10,
+      "move": {
+        "move": {
+          "piece": [ "Knight" ],
+          "target": { "col": "f", "row": 6 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "Black" ],
+        "turn_id": 5,
+        "comment": null
+      }
+    },
+    {
+      "transition_id": 8,
+      "from_": 8,
+      "to_": 9,
+      "move": {
+        "move": {
+          "piece": [ "Pawn" ],
+          "target": { "col": "a", "row": 3 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "White" ],
+        "turn_id": 5,
+        "comment": null
+      }
+    },
+    {
+      "transition_id": 7,
+      "from_": 7,
+      "to_": 8,
+      "move": {
+        "move": {
+          "piece": [ "Knight" ],
+          "target": { "col": "c", "row": 6 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "Black" ],
+        "turn_id": 4,
+        "comment": null
+      }
+    },
+    {
+      "transition_id": 6,
+      "from_": 6,
+      "to_": 7,
+      "move": {
+        "move": {
+          "piece": [ "Pawn" ],
+          "target": { "col": "e", "row": 3 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "White" ],
+        "turn_id": 4,
+        "comment": null
+      }
+    },
+    {
+      "transition_id": 5,
+      "from_": 5,
+      "to_": 6,
+      "move": {
+        "move": {
+          "piece": [ "Pawn" ],
+          "target": { "col": "a", "row": 6 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "Black" ],
+        "turn_id": 3,
+        "comment": null
+      }
+    },
+    {
+      "transition_id": 4,
+      "from_": 4,
+      "to_": 5,
+      "move": {
+        "move": {
+          "piece": [ "Pawn" ],
+          "target": { "col": "c", "row": 4 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "White" ],
+        "turn_id": 3,
+        "comment": null
+      }
+    },
+    {
+      "transition_id": 3,
+      "from_": 3,
+      "to_": 4,
+      "move": {
+        "move": {
+          "piece": [ "Pawn" ],
+          "target": { "col": "d", "row": 6 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "Black" ],
+        "turn_id": 2,
+        "comment": null
+      }
+    },
+    {
+      "transition_id": 2,
+      "from_": 2,
+      "to_": 3,
+      "move": {
+        "move": {
+          "piece": [ "Bishop" ],
+          "target": { "col": "b", "row": 2 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "White" ],
+        "turn_id": 2,
+        "comment": null
+      }
+    },
+    {
+      "transition_id": 1,
+      "from_": 1,
+      "to_": 2,
+      "move": {
+        "move": {
+          "piece": [ "Pawn" ],
+          "target": { "col": "e", "row": 5 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "Black" ],
+        "turn_id": 1,
+        "comment": null
+      }
+    },
+    {
+      "transition_id": 0,
+      "from_": 0,
+      "to_": 1,
+      "move": {
+        "move": {
+          "piece": [ "Pawn" ],
+          "target": { "col": "b", "row": 4 },
+          "start_spec": null,
+          "is_check": false,
+          "is_mate": false,
+          "is_take": false,
+          "is_castle_q": false,
+          "is_castle_k": false,
+          "remark": null,
+          "promote": null
+        },
+        "side": [ "White" ],
+        "turn_id": 1,
+        "comment": null
+      }
+    }
+  ]
+}

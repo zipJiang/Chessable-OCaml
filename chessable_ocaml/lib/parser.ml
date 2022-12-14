@@ -2,7 +2,7 @@
 
 open Core
 
-type side = White | Black | Root [@@deriving eq, sexp];;
+type side = White | Black | Root [@@deriving eq, sexp, yojson];;
 
 type piece =
     Pawn (* indicate whether a pawn can be captured en passant *)
@@ -10,7 +10,7 @@ type piece =
   | Bishop
   | Rook
   | Queen
-  | King [@@deriving eq, sexp];; (* also indicate the avialability of castling either side *)
+  | King [@@deriving eq, sexp, yojson];; (* also indicate the avialability of castling either side *)
 
 let string_of_piece (piece: piece): string =
   match piece with
@@ -24,7 +24,7 @@ let string_of_piece (piece: piece): string =
 type square = {
     col: char;
     row: int;
-};;
+}[@@deriving yojson];;
 
 type mv = {
   piece: piece;
@@ -37,7 +37,7 @@ type mv = {
   is_castle_k: bool;
   remark: string option;
   promote: piece option; (* Could have no promotion *)
-};;
+}[@@deriving yojson];;
 
 (* We could potentially allow continuation in comments, but that involves more complex designs *)
 type move = {

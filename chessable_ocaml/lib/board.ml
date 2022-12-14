@@ -536,6 +536,16 @@ let rec disable_castling (pl: piece list) (kq: char): piece list =
       | _ -> piece::(disable_castling tl kq)
     end
 
+let rec disable_all_eps (pl: piece list): piece list =
+  (* Disable allowance for en passant for all pawns on this side *)
+  match pl with
+  | [] -> []
+  | h::tl -> 
+    if Parser.equal_piece h.piece Pawn then
+      {piece=h.piece;side=h.side;location=h.location;meta=Pawn {ep=false}}::(disable_all_eps tl)
+    else
+      h::(disable_all_eps tl)
+
 let rec take_piece (pl: piece list) (loc: location): piece list =
   (* This function takes a board position and takes a piece off that position *)
   (* Notice that we don't have to modify the board because set_board_position will do it for us *)
@@ -582,12 +592,12 @@ let set_piece_position (from_: location) (to_: location) (board: board) (flip_si
       | White -> {
         board=updated_plain_board;
         white_pieces=update_piece_list board.white_pieces from_ to_ promotion;
-        black_pieces=take_piece board.black_pieces to_;
+        black_pieces=disable_all_eps @@ take_piece board.black_pieces to_;
         side_to_play=if flip_side then Black else White;
       }
       | Black -> {
         board=updated_plain_board;
-        white_pieces=take_piece board.white_pieces to_;
+        white_pieces=disable_all_eps @@ take_piece board.white_pieces to_;
         black_pieces=update_piece_list board.black_pieces from_ to_ promotion;
         side_to_play=if flip_side then White else Black;
       }
@@ -621,7 +631,7 @@ let rec move_piece (mv: Parser.mv) (pl: piece list) (board: board): board =
       | _ -> failwith "Never move for root!"
     else if (Parser.equal_piece mv.piece h.piece) && (check_move_validity mv h board) then
       (* Move the piece here *)
-      let _ = ignore(Printf.printf "%s\n" (string_of_location h.location)) in
+      (* let _ = ignore(Printf.printf "%s\n" (string_of_location h.location)) in *)
       match mv.target with
       | Some {col=col;row=row} ->
         begin
@@ -636,6 +646,7 @@ let make_move (move: Parser.move) (board: board): board =
      This is the core functionality of the board that takes in a board, and a move,
      and return the board after the move.
   *)
+
   if Parser.equal_side (move.side) (board.side_to_play) then
     (* Should be able to play out the move *)
     let mv = move.move in (* Notice that the piece annotation in mv is of Parser.piece *)

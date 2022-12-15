@@ -126,42 +126,45 @@ let find_or_insert_node (rptr: repertoire) (board_hash: string): int =
     ignore(rptr.node_map <- (NodeMap.add_exn ~key:board_hash ~data:nid rptr.node_map));
     nid
   | Some node_id -> node_id
+  
+let append_transition_to_node (rptr: repertoire) (transition_id: int) (node_id: int) =
+  (* This function will append transition to a node position *)
+  let rec append_transition_to_nth_node (n_id: int) (tid: int) (node_list: rnode list): rnode list =
+    match node_list with
+    | [] -> []
+    | h::tl ->
+      if n_id = h.node_id then
+        begin
+        ignore(h.continuations <- tid::h.continuations);
+        h::tl
+        end
+      else
+        h::(append_transition_to_nth_node n_id tid tl)
+  in
+  rptr.nodes <- (append_transition_to_nth_node node_id transition_id rptr.nodes)
+
 
 let find_or_insert_transition (rptr: repertoire) (from_: int) (to_: int) (move: move): int =
   (* This is similar function for transitions *)
+  (* UPDATES: We now insert the transition to the node continuation as well *)
   match TransitionMap.find rptr.transition_map (from_, to_) with
   | None -> 
     let tr_id = List.length rptr.transitions in
     let tr = {transition_id=tr_id;from_=from_;to_=to_;move=move} in
     ignore(rptr.transitions <- tr::rptr.transitions);
     ignore(rptr.transition_map <- (TransitionMap.add_exn ~key:(from_, to_) ~data:tr_id rptr.transition_map));
+    ignore(append_transition_to_node rptr tr_id from_);
     tr_id
   | Some tr_id -> tr_id
-
-let append_transition_to_node (rptr: repertoire) (transition_id: int) (node_id: int) =
-  (* This function will append transition to a node position *)
-  let rec append_transition_to_nth_node (n: int) (tid: int) (node_list: rnode list): rnode list =
-    match node_list with
-    | [] -> []
-    | h::tl ->
-      if n = 0 then
-        begin
-        ignore(h.continuations <- tid::h.continuations);
-        h::tl
-        end
-      else
-        h::(append_transition_to_nth_node (n - 1) tid tl)
-  in
-  rptr.nodes <- (append_transition_to_nth_node node_id transition_id rptr.nodes)
 
 let insert_move_from_position (rptr: repertoire) (board: Board.board) (move: move): repertoire =
   (* You can only insert move because move does not require position checking *)
   let board_after_move = Board.make_move (parser_move_of_move move) board in
   let before_idx = find_or_insert_node rptr (Board.to_fen board) in
   let after_idx = find_or_insert_node rptr (Board.to_fen board_after_move) in
-  let transition_id = find_or_insert_transition rptr before_idx after_idx move in
+  let _ = find_or_insert_transition rptr before_idx after_idx move in
   (* Of course we need to append the transition_id to the before rnode's continuation list *)
-  ignore(append_transition_to_node rptr transition_id before_idx);
+  (* ignore(append_transition_to_node rptr transition_id before_idx); *)
   rptr
 
 let reindex_line (base: repertoire) (targ: repertoire) (line: line): line =

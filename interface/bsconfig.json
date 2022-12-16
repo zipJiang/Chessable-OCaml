@@ -11,6 +11,6 @@
   },
   "jsx": {"version": 3, "v3-dependencies": ["rescript-relay"] },
   "reason": {"react-jsx": 3},
-  "bs-dependencies": ["@rescript/react"],
+  "bs-dependencies": ["@rescript/react", "@ryyppy/rescript-promise"],
   "suffix": ".bs.js"
 }

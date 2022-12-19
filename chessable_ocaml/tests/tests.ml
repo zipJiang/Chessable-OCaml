@@ -62,12 +62,12 @@ let test_col_to_int _ =
   assert_equal Board.(col_of_int (col_to_int 'd')) 'd'
 
 let test_get_square _ =
-  let board = Board.initialize in
+  let board = Board.initialize () in
   assert_equal (match Board.get_square board.board 'b' 2 with | Occupied (('b', 2), _) -> true | _ -> false) true;
   assert_equal (match Board.get_square board.board 'c' 5 with | Empty ('c', 5) -> true | _ -> false) true
 
 let test_set_square _ =
-  let board = Board.initialize in
+  let board = Board.initialize () in
   assert_equal Board.(match get_square (set_square board.board (Empty ('c', 2))) 'c' 2 with | Empty ('c', 2) -> true | _ -> false) true;
   assert_equal Board.(match get_square (set_square board.board (Empty ('a', 1))) 'a' 1 with | Empty ('a', 1) -> true | _ -> false) true
 
@@ -112,7 +112,7 @@ let test_check_proper_move _ =
 
 let test_no_piece_interference _ =
   (* Test there's no piece interfere *)
-  let board = Board.initialize in
+  let board = Board.initialize () in
   assert_equal Board.(check_no_piece_interference {
       piece=Bishop;
       target=Some {col='g';row=5};
@@ -125,7 +125,7 @@ let test_no_piece_interference _ =
       remark=None;
       promote=None;
   } {piece=Bishop;side=White;location=('c', 1);meta=Other} board.board) false;
-  let board = Board.initialize in
+  let board = Board.initialize () in
   assert_equal Board.(check_no_piece_interference {
       piece=Knight;
       target=Some {col='g';row=1};
@@ -140,7 +140,7 @@ let test_no_piece_interference _ =
   } {piece=Knight;side=White;location=('f', 3);meta=Other} board.board) true
 
 let test_set_piece_position _ =
-  let board = Board.initialize in
+  let board = Board.initialize () in
   assert_equal Board.(set_piece_position ('b', 1) ('c', 3) board true None).side_to_play Black;
   assert_equal Board.(match (get_square (set_piece_position ('b', 1) ('c', 3) board true None).board 'b' 1) with | Empty _ -> true | _ -> false) true
 

@@ -105,7 +105,7 @@ type board = {
   side_to_play: Parser.side;
 }
 
-let initialize: board =
+let initialize (): board =
   (* This function will initialize a board to a playable state *)
   let white_pawns = [
     {piece=Pawn; location=('a', 2); side=White; meta=Pawn {ep=false}};

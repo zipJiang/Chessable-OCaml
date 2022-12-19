@@ -47,6 +47,22 @@ type rnode = {
 
 module NodeMap = Map.Make(String);;
 
+let rec find_ridx (rnode_list: rnode list) (ridx: int): rnode =
+  match rnode_list with
+  | [] -> failwith "Not found!"
+  | h::tl ->
+    begin
+      match h with {node_id=nid;_} -> if nid = ridx then h else find_ridx tl ridx
+    end
+
+let rec find_tidx (trans_list: transition list) (tidx: int): transition =
+  match  trans_list with
+  | [] ->  failwith "Not found!"
+  | h::tl -> 
+    begin
+      match h with {transition_id=tid;_} -> if tid = tidx then h else find_tidx tl tidx
+    end
+ 
 
 module Transition: (Map.Key with type t = transition_index) = struct
   type t = int * int;;
@@ -110,6 +126,15 @@ let repertoire_of_portable (prptr: portable_repertoire): repertoire =
     transitions=prptr.transitions;
   }
 
+let initialize (): repertoire =
+  (* Initialize an empty repertoire *)
+  let prptr = {
+    lines=[];
+    nodes=[];
+    transitions=[]
+  } in
+  repertoire_of_portable prptr
+
 let make_node (id: int) (board_hash: string): (rnode * int) =
   (* Make an rnode with empty continuation *)
   {
@@ -171,11 +196,11 @@ let reindex_line (base: repertoire) (targ: repertoire) (line: line): line =
   (* This is the function that maps a line into new rnode index *)
   match line with {from_node=findex;line=int_list;repetition=repetition} ->
     let board_reindex (integer: int): int =
-      NodeMap.find_exn (targ.node_map) (List.nth_exn base.nodes integer).board_hash in
+      NodeMap.find_exn (targ.node_map) (find_ridx base.nodes integer).board_hash in
     let nfindex = board_reindex (findex) in
     (* Transition index can be indentified from *)
     let transition_reindex (integer: int): int =
-      let nf, nt = match List.nth_exn base.transitions integer with
+      let nf, nt = match find_tidx base.transitions integer with
       | {from_=from_; to_=to_;_} -> board_reindex from_, board_reindex to_ in
       TransitionMap.find_exn (targ.transition_map) (nf, nt)
     in
@@ -185,38 +210,71 @@ let combine_repertoire (rptr: repertoire) (other: repertoire): repertoire =
   (* This function iterates over all positions and continuations from other and adding all transitions *)
   let merge_transition (rptr: repertoire) (node_list: rnode list) (tr: transition): unit =
     match tr with {move=move;from_=from_;to_=to_;_} ->
-      let before_hash, after_hash = (List.nth_exn node_list from_).board_hash, (List.nth_exn node_list to_).board_hash in
+      let before_hash, after_hash = (find_ridx node_list from_).board_hash, (find_ridx node_list to_).board_hash in
       let before_idx, after_idx = find_or_insert_node rptr before_hash, find_or_insert_node rptr after_hash in
       ignore(find_or_insert_transition rptr before_idx after_idx move)
     in
   let merge_all_transition_from_node (rptr: repertoire) (tlist: transition list) (node: rnode): unit =
-      List.iter ~f:(merge_transition rptr other.nodes) (List.map ~f:(List.nth_exn tlist) node.continuations)
+      List.iter ~f:(merge_transition rptr other.nodes) (List.map ~f:(find_tidx tlist) node.continuations)
     in
   List.iter ~f:(merge_all_transition_from_node rptr other.transitions) other.nodes;
   (* We also need to reindex all the lines in the original repertoire *)
   rptr.lines <- (rptr.lines @ List.map ~f:(reindex_line other rptr) other.lines);
   rptr
 
-let rec merge_move_tree (start_board: Board.board) (rptr: repertoire) (move: Parser.move): repertoire =
+(* TODO: Implement a way to append all transition as lines *)
+
+let rec move_tree_to_repertoire (start_board: Board.board) (move: Parser.move): repertoire =
+  (* 
+    This function takes a move tree and generate repertoire, as well as creating lines
+    at the same time.
+  *)
+  let rptr = initialize () in
+  let before_idx = find_or_insert_node rptr (Board.to_fen start_board) in
+  let board_after_move = Board.make_move move start_board in
+  let after_idx = find_or_insert_node rptr (Board.to_fen board_after_move) in
+  let tidx = find_or_insert_transition rptr before_idx after_idx (move_from_parser_move move) in
+  let sub_rptrs = List.map ~f:(move_tree_to_repertoire board_after_move) move.continuation in
+  match sub_rptrs with
+  | [] -> ignore(rptr.lines <- [{
+    repetition={level=0;last_seen=(-1)};
+    from_node=before_idx;
+    line=[tidx];
+  }]);
+    rptr
+  | h::tl -> 
+    let rptr = combine_repertoire rptr h in
+    let lines = rptr.lines in
+    (* append tidx to the head of all first line calculation *)
+    let append_to_line (bidx: int) (aidx) (tidx: int)  (line: line): line =
+      if line.from_node = aidx then
+        {
+          repetition=line.repetition;
+          from_node=bidx;
+          line=tidx::line.line
+        }
+      else
+        line
+    in
+    ignore(rptr.lines <- (List.map ~f:(append_to_line before_idx after_idx tidx) lines));
+    List.fold ~init:rptr ~f:combine_repertoire tl
+
+let merge_move_tree (start_board: Board.board) (rptr: repertoire) (move: Parser.move): repertoire =
   (* 
     Notice that merge_move_tree should take a tree style move in Parser.move,
     and try to merge every move in the move to the move repertoire tree.
   *)
   
   (* First we start by adding start_board position into the rptr *)
-  let before_idx = find_or_insert_node rptr (Board.to_fen start_board) in
-  let board_after_move = Board.make_move move start_board in
-  let after_idx = find_or_insert_node rptr (Board.to_fen board_after_move) in
-  (* construct a transition *)
-  let _ = find_or_insert_transition rptr before_idx after_idx (move_from_parser_move move) in
-  (* iterate over the continuaitons and do similar addition *)
-  List.fold ~f:(merge_move_tree board_after_move) ~init:rptr move.continuation
+  combine_repertoire rptr (move_tree_to_repertoire start_board move)
+
 
 (* From this line on we define json serialization functions for repertoire type with yojson functionality for portable_repertoire *)
 let save_repertoire_to_file (rptr: repertoire) (filename: string): unit =
   let prptr = repertoire_to_portable rptr in
   let out_channel = Out_channel.create filename in
-  Yojson.Safe.pretty_to_channel out_channel (portable_repertoire_to_yojson prptr)
+  Yojson.Safe.pretty_to_channel out_channel (portable_repertoire_to_yojson prptr);
+  Out_channel.close out_channel
 
 let load_repertoire_from_file (filename: string): repertoire =
   (* need to load a portable_repertoire and create repertoire *)

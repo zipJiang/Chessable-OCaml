@@ -21,7 +21,6 @@ The project should rely on usual package building tools, so `dune` should be use
 
 This is deprecated as it uses a lot of deprecated packages (an implementation from 9 years ago).
 
-
 ## Implementation Order
 
 1. Backend file processing, `.pgn` function parsing, import export.
@@ -31,3 +30,49 @@ This is deprecated as it uses a lot of deprecated packages (an implementation fr
 5. User interface for input moves and get feedbacks.
 6. Server that respond to user review inputs etc.
 7. Glue everything and produce a working system.
+
+
+## Build the Project
+
+Notice that the part depends on OCaml only lives inside `/chessable_ocaml` folder, so it make sense to start the building process there. Under the `/chessable_ocaml` directory, use the command
+```shellscript
+dune build
+```
+
+For the interface part you may need to run `npm install` before you are able to run the project and rescript build.  To compile Rescript to Javascript, run
+
+```shellscript
+npx rescript
+```
+
+
+## Generating Repertoire File from `.pgn` File
+
+To use the local chessable file, you need to have at least one `.pgn` file to generate the repertoire from. There are some example `.pgn` file in the `/data` directory. To merge a `.pgn` file into a repertoire json file, run the command
+
+```shellscript
+./chessable.exe input [REPERTOIRE] --pgn [PGN_FILE]
+```
+
+You should be able to run this over multiple pgn files one by one, and if the repertoire file you pointed to does not exist, the `chessable.exe` runnable will generate one for you.
+
+
+## Serving the Repertoire
+
+To serve a repertoire file, still run the same script with different task parameter:
+
+```shellscript
+./chessable.exe serve [REPERTOIRE]
+```
+
+This will serve the repertoire file at a given port (pre-specified)
+
+## Running the Interface Server
+
+To perform actual review, one need to run the react interface under `/interface`. To start an interface enter the `/interface` directory, and run the `npm` command:
+
+```shellscript
+npm start
+```
+
+This should pop up a web browser window at `http://localhost:3000/` that you can perform review.

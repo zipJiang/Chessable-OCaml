@@ -94,3 +94,20 @@ code {
   background-color: #298e46;
   box-shadow: rgba(20, 70, 32, .2) 0 1px 0 inset;
 }
+
+.comment {
+  margin: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  border-width: 5px;
+  border-style: solid;
+  position: relative;
+  display: inline-flex;
+  font-family: "Times New Roman", Times, serif;
+  font-size: 20px;
+  width: 30%;
+}
+
+.review-window-container {
+    width: 100%;
+}

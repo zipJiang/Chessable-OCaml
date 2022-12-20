@@ -120,9 +120,9 @@ let make = (~lines, ~nodes, ~transitions, ~line_select, ~onClick) => {
             open Js.Array2
             (transitions -> filter(find_tidx))[0]
         } 
-        let comment = if trans["move"]["comment"] === Js.Null.empty {""} else {Js.Null.getExn(trans["move"]["comment"])}
+        let comment = if trans["move"]["comment"] === Js.Null.empty {"Comment:"} else {"Comment: " ++ Js.Null.getExn(trans["move"]["comment"])}
 
-        <div>
+        <div className="review-window-container">
         <div className={"board-container " ++ cStatus}>
             <Chessboard position={game} onPieceDrop={onDrop}></Chessboard>
         </div>

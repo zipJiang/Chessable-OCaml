@@ -144,6 +144,19 @@ let test_set_piece_position _ =
   assert_equal Board.(set_piece_position ('b', 1) ('c', 3) board true None).side_to_play Black;
   assert_equal Board.(match (get_square (set_piece_position ('b', 1) ('c', 3) board true None).board 'b' 1) with | Empty _ -> true | _ -> false) true
 
+let test_transition_map _ = 
+  let map = Repertoire.TransitionMap.empty in
+  assert_equal Repertoire.(TransitionMap.count ~f:(fun x -> String.equal x "hello") (TransitionMap.add_exn ~key:(1, 1) ~data:"hello" map)) 1;
+  assert_equal Repertoire.(TransitionMap.count ~f:(fun x -> x = 1) (TransitionMap.add_exn ~key:(1, 1) ~data:1 map)) 1
+
+
+(* Other stuff in the repertoire implementation needs heavy data to test, which is not very handy to test here. *)
+let test_repertoire_node _ =
+  let rnode, ridx = Repertoire.make_node 10 "hash_00" in
+  let repertoire = Repertoire.initialize () in
+  assert_equal ridx rnode.node_id;
+  assert_equal Repertoire.(find_or_insert_node repertoire "hash_00") Repertoire.(find_or_insert_node repertoire "hash_00")
+
 let parser_test = "Parser Tests" >: test_list [
   (* Test for parser is relatively limited as we are exposing a few functions. *)
   "Test Pprint Line" >:: test_pprint_line;
@@ -166,10 +179,16 @@ let board_test = "Board Tests" >: test_list [
   "Test Set Piece Position" >:: test_set_piece_position;
 ]
 
+let repertoire_test = "Repertoire Tests" >: test_list [
+  "Test Transition Map" >:: test_transition_map;
+  "Test Repertoire Node" >:: test_repertoire_node;
+]
+
 let series = "Chessable_ocaml Tests" >::: [
   helper_test;
   parser_test;
   board_test;
+  repertoire_test;
 ]
 
 let () =
